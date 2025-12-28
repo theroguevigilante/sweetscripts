@@ -1,0 +1,2 @@
+#!/bin/sh
+rclone mount Phone:/sdcard $HOME/Phone --vfs-cache-mode writes --daemon

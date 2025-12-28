@@ -1,0 +1,39 @@
+#!/bin/sh
+
+set -e
+
+if [ ! -d "/tmp/samba" ]; then
+  mkdir -p "$DEST_DIR" || {
+    echo "Failed to create directory $DEST_DIR" >&2
+    exit 1
+  }
+fi
+
+rclone mount Home: /tmp/samba --vfs-cache-mode writes --daemon
+sleep 3
+
+# Configuration
+SOURCE_FILE="$HOME/.local/share/password-db/Passwords.kdbx"
+DEST_DIR="/tmp/samba/$USER/pass-backups"
+TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+BASENAME=$(basename "$SOURCE_FILE")
+BACKUP_FILE="${DEST_DIR}/${TIMESTAMP}_${BASENAME}"
+
+# Create destination directory if it doesn't exist
+if [ ! -d "$DEST_DIR" ]; then
+  mkdir -p "$DEST_DIR" || {
+    echo "Failed to create directory $DEST_DIR" >&2
+    exit 1
+  }
+fi
+
+# Copy the source file to the backup file
+cp "$SOURCE_FILE" "$BACKUP_FILE" || {
+  echo "Failed to copy $SOURCE_FILE to $BACKUP_FILE" >&2
+  exit 1
+}
+
+find $DEST_DIR -type f -name "*.kdbx" -mtime +7 -exec rm {} \;
+echo "Backup of $SOURCE_FILE completed at $TIMESTAMP"
+
+fusermount -u /tmp/samba

@@ -1,0 +1,15 @@
+#!/bin/sh
+WINEPREFIX=/home/naimish/Games/GamePrefix wineserver --kill=9
+pkill gamemoded
+pkill services.exe
+pkill wineboot.exe
+pkill wine
+pkill svchost.exe
+pkill svc
+pkill -9 wine & pkill -9 wineserver & pkill -9 winedevice.exe & pkill -9 explorer.exe & pkill -9 Xwayland & pkill -9 gamescope
+for j in  `pidof gamescopereaper` ; do
+    kill -9 $j
+done
+for p in `pgrep -f winedevice.exe`; do
+    kill -9 $p
+done

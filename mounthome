@@ -1,0 +1,2 @@
+#!/bin/sh
+rclone mount Home: $HOME/samba --vfs-cache-mode writes --daemon

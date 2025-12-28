@@ -1,0 +1,2 @@
+#!/bin/sh
+bwrap --bind / / --dev-bind-try /dev /dev --bind-try /tmp /tmp --unshare-net --tmpfs /tmp/.X11-unix --ro-bind /tmp/.X11-unix/X0 /tmp/.X11-unix/X0 /home/naimish/.local/src/lutris/bin/lutris
