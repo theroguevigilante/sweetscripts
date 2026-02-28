@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# --- Configuration & Paths ---
+STATE_FILE="/tmp/universal_gamemode_active"
+ASUS_WMI_PATH="/sys/devices/platform/asus-nb-wmi/throttle_thermal_policy"
+TARGET_USER=$(logname)
+USER_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
+
+# Detects X11 environment for Picom and Nvidia
+export DISPLAY=:0
+export XAUTHORITY="$USER_HOME/.Xauthority"
+
+# --- Automatic Hardware Detection ---
+TOTAL_RAM=$(free -g | awk '/^Mem:/{print $2}')
+IS_LOW_RAM=$([ "$TOTAL_RAM" -lt 12 ] && echo "true" || echo "false")
+
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run with sudo."
+   exit 1
+fi
+
+# --- Universal Priority Helper ---
+apply_priorities() {
+    # Find the 'Game' (Top CPU consumer excluding system/tools)
+    GAME_PID=$(ps -eo pid,pcpu,comm --sort=-pcpu | grep -vE "(obs|brave|Xorg|picom|systemd|root|ps|grep|bash)" | head -n 2 | tail -n 1 | awk '{print $1}')
+
+    # Priority 1: The Detected Game
+    if [ ! -z "$GAME_PID" ]; then
+        renice -n -15 -p "$GAME_PID" >/dev/null 2>&1
+        ionice -c 1 -n 0 -p "$GAME_PID" >/dev/null 2>&1
+    fi
+
+    # Priority 2: OBS
+    OBS_PID=$(pgrep -f "obs" | head -n 1)
+    if [ ! -z "$OBS_PID" ]; then
+        renice -n -10 -p "$OBS_PID" >/dev/null 2>&1
+        ionice -c 1 -n 4 -p "$OBS_PID" >/dev/null 2>&1
+    fi
+
+    # Priority 3: Browser Brave
+    BRAVE_PID=$(pgrep -f "brave" | head -n 1)
+    if [ ! -z "$BRAVE_PID" ]; then
+        renice -n 10 -p "$BRAVE_PID" >/dev/null 2>&1
+        ionice -c 2 -n 7 -p "$BRAVE_PID" >/dev/null 2>&1
+    fi
+}
+
+if [ ! -f "$STATE_FILE" ]; then
+    echo "🚀 Activating Universal Gaming Mode..."
+    
+    # 1. Kill Picom (Removes input lag/stutter)
+    pkill picom
+
+    # 2. Hardware Performance
+    [ -f "$ASUS_WMI_PATH" ] && echo 1 > "$ASUS_WMI_PATH"
+    cpupower frequency-set -g performance
+    sudo -u "$TARGET_USER" DISPLAY=:0 nvidia-settings -a "[gpu:0]/GPUPowerMizerMode=1" > /dev/null
+
+    # 3. Memory Management
+    if [ "$IS_LOW_RAM" = "true" ]; then
+        sysctl -w vm.swappiness=100
+        sync; echo 3 > /proc/sys/vm/drop_caches
+    else
+        sysctl -w vm.swappiness=10
+    fi
+
+    # 4. Background Priority Watcher
+    (
+        while [ -f "$STATE_FILE" ]; do
+            apply_priorities
+            sleep 20 
+        done
+    ) &
+
+    touch "$STATE_FILE"
+    echo "🔥 Mode: UNIVERSAL + PICOM OFF. Systems optimized."
+else
+    echo "🍃 Returning to Normal Mode..."
+    
+    # 1. Hardware Restoration
+    [ -f "$ASUS_WMI_PATH" ] && echo 0 > "$ASUS_WMI_PATH"
+    cpupower frequency-set -g schedutil
+    sysctl -w vm.swappiness=60
+    sudo -u "$TARGET_USER" DISPLAY=:0 nvidia-settings -a "[gpu:0]/GPUPowerMizerMode=0" > /dev/null
+    
+    # 2. Restart Picom (Runs as your user, not root)
+    sudo -u "$TARGET_USER" DISPLAY=:0 picom -b &
+
+    rm "$STATE_FILE"
+    echo "✅ System restored. Picom is back on."
+fi
