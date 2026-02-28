@@ -79,7 +79,7 @@ else
     
     # 1. Hardware Restoration
     [ -f "$ASUS_WMI_PATH" ] && echo 0 > "$ASUS_WMI_PATH"
-    cpupower frequency-set -g schedutil
+    cpupower frequency-set -g powersave
     sysctl -w vm.swappiness=60
     sudo -u "$TARGET_USER" DISPLAY=:0 nvidia-settings -a "[gpu:0]/GPUPowerMizerMode=0" > /dev/null
     
