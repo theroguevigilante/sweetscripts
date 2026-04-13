@@ -13,3 +13,6 @@ done
 for p in `pgrep -f winedevice.exe`; do
     kill -9 $p
 done
+pkill xalia.exe
+pkill tabtip.exe
+pkill UnityCrashHandl

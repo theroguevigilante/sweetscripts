@@ -37,8 +37,8 @@ apply_priorities() {
         ionice -c 1 -n 4 -p "$OBS_PID" >/dev/null 2>&1
     fi
 
-    # Priority 3: Browser Brave
-    BRAVE_PID=$(pgrep -f "brave" | head -n 1)
+    # Priority 3: Browser zen
+    BRAVE_PID=$(pgrep -f "zen-bin" | head -n 1)
     if [ ! -z "$BRAVE_PID" ]; then
         renice -n 10 -p "$BRAVE_PID" >/dev/null 2>&1
         ionice -c 2 -n 7 -p "$BRAVE_PID" >/dev/null 2>&1
