@@ -1,0 +1,58 @@
+#!/bin/sh
+
+# Paths
+CONF="/etc/X11/xorg.conf.d/10-nvidia.conf"
+MODS="/etc/modprobe.d/disable-nvidia.conf"
+
+usage() {
+    printf "Usage: %s [nvidia|hybrid|intel]\n" "$0"
+    exit 1
+}
+
+[ $# -eq 0 ] && usage
+
+case "$1" in
+    nvidia)
+        printf "Enabling NVIDIA-ONLY mode...\n"
+        # Create Xorg config
+        sudo sh -c "cat > $CONF <<EOF
+Section \"OutputClass\"
+    Identifier \"nvidia\"
+    MatchDriver \"nvidia-drm\"
+    Driver \"nvidia\"
+    Option \"AllowEmptyInitialConfiguration\"
+    Option \"PrimaryGPU\" \"yes\"
+EndSection
+EOF"
+        # Enable modules and link xinitrc
+        [ -f "$MODS" ] && sudo rm "$MODS"
+        ln -sf "$HOME/.xinitrc.nvidia" "$HOME/.xinitrc"
+        ;;
+
+    hybrid)
+        printf "Enabling HYBRID mode...\n"
+        [ -f "$CONF" ] && sudo rm "$CONF"
+        [ -f "$MODS" ] && sudo rm "$MODS"
+        ln -sf "$HOME/.xinitrc.hybrid" "$HOME/.xinitrc"
+        ;;
+
+    intel)
+        printf "Enabling INTEL-ONLY power saving...\n"
+        [ -f "$CONF" ] && sudo rm "$CONF"
+        # Blacklist Nvidia modules to power down the GTX 1650
+        sudo sh -c "cat > $MODS <<EOF
+blacklist nvidia
+blacklist nvidia_drm
+blacklist nvidia_modeset
+blacklist nvidia_uvm
+blacklist nouveau
+EOF"
+        ln -sf "$HOME/.xinitrc.intel" "$HOME/.xinitrc"
+        ;;
+
+    *)
+        usage
+        ;;
+esac
+
+printf "Done. Please reboot for changes to take effect.\n"
