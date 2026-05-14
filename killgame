@@ -16,3 +16,4 @@ done
 pkill xalia.exe
 pkill tabtip.exe
 pkill UnityCrashHandl
+pkill xdg-desktop-por
