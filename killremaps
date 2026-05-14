@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# This script reverses custom key mappings and repeat rates.
+
+# 1. Revert key repeat delay and rate to standard X11 defaults. 
+# (Standard is typically a 660ms delay and 25 repeats per second. 
+# Depending on your desktop environment, defaults might be closer to 500 30).
+xset r rate 660 25
+
+# 2. Clear all custom xkbmap options. 
+# Passing an empty string removes the caps:escape and altwin:menu_win rules,
+# restoring the default Caps Lock and Menu key functions.
+setxkbmap -option ""
+
+# 3. Kill the xcape background process so tapping the Super (Windows) key 
+# no longer triggers an Escape keypress.
+killall xcape 2>/dev/null
+
+# Note: We don't need a command to reverse the Caps Lock toggle (xdotool), 
+# because now that Caps Lock is restored to its default behavior in step 2, 
+# you can simply press it to turn it on or off normally.
