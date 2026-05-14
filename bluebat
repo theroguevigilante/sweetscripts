@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Automatically find the first connected Bluetooth audio device path
+# upower usually registers them with 'headset' or 'headphones' in the path
+DEVICE=$(upower -e | grep -E 'headset|headphones|bluez_device' | head -n 1)
+
+# Check if a device was found
+if [ -z "$DEVICE" ]; then
+    # Not connected or not found
+    echo "🎧--%"
+    exit 0
+fi
+
+# Extract the battery percentage
+BATTERY=$(upower -i "$DEVICE" | grep -E "percentage" | awk '{print $2}')
+
+# Output to dwmblocks
+if [ -z "$BATTERY" ]; then
+    echo "🎧N/A"
+else
+    echo "🎧$BATTERY"
+fi
